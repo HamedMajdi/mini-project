@@ -7,6 +7,8 @@ import semantic.symbol.Symbol;
 import semantic.symbol.SymbolTable;
 import semantic.symbol.SymbolType;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
 /**
@@ -158,34 +160,70 @@ public class CodeGenerator {
     }
 
     public void pid(Token next) {
-        if (symbolStack.size() > 1) {
-            String methodName = symbolStack.pop();
-            String className = symbolStack.pop();
-            try {
-
-                Symbol s = symbolTable.get(className, methodName, next.value);
-                varType t = varType.Int;
-                switch (s.type) {
-                    case Bool:
-                        t = varType.Bool;
-                        break;
-                    case Int:
-                        t = varType.Int;
-                        break;
-                }
-                ss.push(new Address(s.address, t));
-
-
-            } catch (Exception e) {
-                ss.push(new Address(0, varType.Non));
-            }
-            symbolStack.push(className);
-            symbolStack.push(methodName);
-        } else {
+        if (symbolStack.size() <= 1) {
             ss.push(new Address(0, varType.Non));
+            symbolStack.push(next.value);
+            return;
         }
+
+        handleSymbolStack(next);
+    }
+
+    private void handleSymbolStack(Token next) {
+        String methodName = symbolStack.pop();
+        String className = symbolStack.pop();
+
+        Symbol s = symbolTable.get(className, methodName, next.value);
+        if (s == null) {
+            ss.push(new Address(0, varType.Non));
+        } else {
+            varType t = getType(s);
+            ss.push(new Address(s.address, t));
+        }
+
+        symbolStack.push(className);
+        symbolStack.push(methodName);
         symbolStack.push(next.value);
     }
+
+
+
+    private varType getType(Symbol s) {
+        Map<varType, varType> typeMap = new HashMap<>();
+        typeMap.put(varType.Bool, varType.Bool);
+        typeMap.put(varType.Int, varType.Int);
+
+        return typeMap.getOrDefault(s.type, varType.Non);
+    }
+//    public void pid(Token next) {
+//        if (symbolStack.size() > 1) {
+//            String methodName = symbolStack.pop();
+//            String className = symbolStack.pop();
+//            try {
+//
+//                Symbol s = symbolTable.get(className, methodName, next.value);
+//                varType t = varType.Int;
+//                switch (s.type) {
+//                    case Bool:
+//                        t = varType.Bool;
+//                        break;
+//                    case Int:
+//                        t = varType.Int;
+//                        break;
+//                }
+//                ss.push(new Address(s.address, t));
+//
+//
+//            } catch (Exception e) {
+//                ss.push(new Address(0, varType.Non));
+//            }
+//            symbolStack.push(className);
+//            symbolStack.push(methodName);
+//        } else {
+//            ss.push(new Address(0, varType.Non));
+//        }
+//        symbolStack.push(next.value);
+//    }
 
     public void fpid() {
         ss.pop();
